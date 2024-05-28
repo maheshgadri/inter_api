@@ -25,7 +25,12 @@ ngrok.connect(port1).then(url => {
 
   // Pass ngrokUrl to router
   const desOpenAiResponseRouter = require('./routes/des_open_ai_response')(ngrokUrl);
+  const fetchRouteRouter = require('./routes/fetch_route');
+  const saveUserResponseRouter = require('./routes/save_user_response')(ngrokUrl);
+
   app.use('/des_open_ai_response', desOpenAiResponseRouter);
+  app.use('/fetch_route', fetchRouteRouter(ngrokUrl));
+  app.use('/save_user_response',saveUserResponseRouter);
 }).catch(error => {
   console.log(`Couldn't tunnel ngrok: ${error}`);
 });
