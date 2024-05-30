@@ -59,7 +59,7 @@ module.exports = (ngrokUrl) => {
         }
 
         const correctMatchCount = results[0].correctMatchCount;
-        const message = `Total Score: ${score}, Correct Match Count: ${correctMatchCount}`;
+        const message = `Total Answered: ${score}, Correct Answered Count: ${correctMatchCount}`;
 
         res.json({ message });
       });
