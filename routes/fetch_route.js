@@ -20,35 +20,75 @@ connection.connect((err) => {
 });
 
 
+// module.exports = (ngrokUrl) => {
+//     router.get('/responses', (req, res) => {
+//       // Fetch all data from destination_openai_response table
+//       const getAllDataQuery = 'SELECT id, question_text, option1, option2, option3, option4 FROM destination_openai_response';
+  
+//       connection.query(getAllDataQuery, (err, results) => {
+//         if (err) {
+//           console.error('Error fetching data:', err);
+//           return res.status(500).json({ error: 'Internal Server Error' });
+//         }
+  
+//         if (results.length === 0) {
+//           return res.status(404).json({ error: 'No data found' });
+//         }
+  
+//         const responseData = results.map((result) => {
+//           return {
+//             id: result.id,
+//             question_text: result.question_text.trim(),
+//             option1: result.option1.trim(),
+//             option2: result.option2.trim(),
+//             option3: result.option3.trim(),
+//             option4: result.option4.trim()
+//           };
+//         });
+  
+//         res.json(responseData);
+//       });
+//     });
+  
+//     return router;
+//   };
+
 module.exports = (ngrokUrl) => {
-    router.get('/responses', (req, res) => {
-      // Fetch all data from destination_openai_response table
-      const getAllDataQuery = 'SELECT id, question_text, option1, option2, option3, option4 FROM destination_openai_response';
-  
-      connection.query(getAllDataQuery, (err, results) => {
-        if (err) {
-          console.error('Error fetching data:', err);
-          return res.status(500).json({ error: 'Internal Server Error' });
-        }
-  
-        if (results.length === 0) {
-          return res.status(404).json({ error: 'No data found' });
-        }
-  
-        const responseData = results.map((result) => {
-          return {
-            id: result.id,
-            question_text: result.question_text.trim(),
-            option1: result.option1.trim(),
-            option2: result.option2.trim(),
-            option3: result.option3.trim(),
-            option4: result.option4.trim()
-          };
-        });
-  
-        res.json(responseData);
+  router.get('/responses', (req, res) => {
+    const userId = req.query.user_id;
+    // const userId = 2;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    // Fetch data from destination_openai_response table based on user_id
+    const getAllDataQuery = 'SELECT question_text, option1, option2, option3, option4 FROM destination_openai_response WHERE user_id = ?';
+    
+    connection.query(getAllDataQuery, [userId], (err, results) => {
+      if (err) {
+        console.error('Error fetching data:', err);
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'No data found' });
+      }
+
+      const responseData = results.map((result) => {
+        return {
+          id: result.id,
+          question_text: result.question_text.trim(),
+          option1: result.option1.trim(),
+          option2: result.option2.trim(),
+          option3: result.option3.trim(),
+          option4: result.option4.trim()
+        };
       });
+
+      res.json(responseData);
     });
-  
-    return router;
-  };
+  });
+
+  return router;
+};
