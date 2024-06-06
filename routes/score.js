@@ -23,16 +23,26 @@ module.exports = (ngrokUrl) => {
  
   // New API endpoint to get the score
   router.get('/score', (req, res) => {
+    const userId = req.query.user_id;  // Assuming you pass user_id as a query parameter
+    // const userId = 1; 
+    if (!userId) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
     const scoreQuery = `
-      SELECT COUNT(*) AS score
-      FROM destination_openai_response dor
-      JOIN user_responses ur
-      ON dor.answer = ur.selected_option
-      AND dor.id = ur.question_id;
+      SELECT
+        COUNT(*) AS totalAnswered,
+        SUM(CASE WHEN dor.answer = ur.selected_option THEN 1 ELSE 0 END) AS correctMatchCount
+      FROM user_responses ur
+      JOIN destination_openai_response dor
+        ON dor.id = ur.question_id
+        AND ur.user_id = ?
+        AND dor.user_id = ur.user_id;
     `;
 
-    connection.query(scoreQuery, (err, results) => {
+    connection.query(scoreQuery, [userId], (err, results) => {
       if (err) {
+   
         console.error('Error calculating score:', err);
         return res.status(500).json({ error: 'Internal Server Error' });
       }
@@ -41,28 +51,12 @@ module.exports = (ngrokUrl) => {
         return res.status(404).json({ error: 'No data found' });
       }
 
-      const score = results[0].score;
+      const totalAnswered = results[0].totalAnswered;
+      const correctMatchCount = results[0].correctMatchCount;
 
-      // Count the number of correct match answers
-      const correctMatchCountQuery = `
-        SELECT COUNT(*) AS correctMatchCount
-        FROM destination_openai_response dor
-        JOIN user_responses ur
-        ON dor.answer = ur.selected_option
-        AND dor.id = ur.question_id;
-      `;
+      const message = `Total Answered: ${totalAnswered}, Correct Answered Count: ${correctMatchCount}`;
 
-      connection.query(correctMatchCountQuery, (err, results) => {
-        if (err) {
-          console.error('Error counting correct match answers:', err);
-          return res.status(500).json({ error: 'Internal Server Error' });
-        }
-
-        const correctMatchCount = results[0].correctMatchCount;
-        const message = `Total Answered: ${score}, Correct Answered Count: ${correctMatchCount}`;
-
-        res.json({ message });
-      });
+      res.json({ message });
     });
   });
 
