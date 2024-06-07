@@ -20,11 +20,10 @@ connection.connect((err) => {
 });
 
 module.exports = (ngrokUrl) => {
- 
   // New API endpoint to get the score
   router.get('/score', (req, res) => {
-    const userId = req.query.user_id;  // Assuming you pass user_id as a query parameter
-    // const userId = 1; 
+    const userId = req.query.user_id;
+
     if (!userId) {
       return res.status(400).json({ error: 'user_id is required' });
     }
@@ -36,29 +35,91 @@ module.exports = (ngrokUrl) => {
       FROM user_responses ur
       JOIN destination_openai_response dor
         ON dor.id = ur.question_id
-        AND ur.user_id = ?
-        AND dor.user_id = ur.user_id;
+      WHERE ur.user_id = ?
     `;
 
     connection.query(scoreQuery, [userId], (err, results) => {
       if (err) {
-   
         console.error('Error calculating score:', err);
         return res.status(500).json({ error: 'Internal Server Error' });
       }
 
-      if (results.length === 0) {
+      if (results.length === 0 || results[0].totalAnswered === 0) {
         return res.status(404).json({ error: 'No data found' });
       }
 
       const totalAnswered = results[0].totalAnswered;
-      const correctMatchCount = results[0].correctMatchCount;
+      const correctMatchCount = results[0].correctMatchCount || 0; // Ensure it's zero if null
+
+      console.log('Total Answered:', totalAnswered); // Debugging
+      console.log('Correct Match Count:', correctMatchCount); // Debugging
 
       const message = `Total Answered: ${totalAnswered}, Correct Answered Count: ${correctMatchCount}`;
 
       res.json({ message });
     });
+
+    // Additional debugging: Log both correct and incorrect matches
+    const debugQuery = `
+      SELECT ur.question_id, ur.selected_option, dor.answer
+      FROM user_responses ur
+      JOIN destination_openai_response dor
+        ON dor.id = ur.question_id
+      WHERE ur.user_id = ?
+    `;
+
+    connection.query(debugQuery, [userId], (err, debugResults) => {
+      if (err) {
+        console.error('Error running debug query:', err);
+      } else {
+        console.log('Debug Data:', debugResults);
+      }
+    });
   });
 
   return router;
 };
+// module.exports = (ngrokUrl) => {
+ 
+//   // New API endpoint to get the score
+//   router.get('/score', (req, res) => {
+//     const userId = req.query.user_id;  // Assuming you pass user_id as a query parameter
+//     // const userId = 1; 
+//     if (!userId) {
+//       return res.status(400).json({ error: 'user_id is required' });
+//     }
+
+//     const scoreQuery = `
+//       SELECT
+//         COUNT(*) AS totalAnswered,
+//         SUM(CASE WHEN dor.answer = ur.selected_option THEN 1 ELSE 0 END) AS correctMatchCount
+//       FROM user_responses ur
+//       JOIN destination_openai_response dor
+//         ON dor.id = ur.question_id
+//         AND ur.user_id = ?
+//         AND dor.user_id = ur.user_id;
+//     `;
+
+//     connection.query(scoreQuery, [userId], (err, results) => {
+//       if (err) {
+   
+//         console.error('Error calculating score:', err);
+//         return res.status(500).json({ error: 'Internal Server Error' });
+//       }
+
+//       if (results.length === 0) {
+//         return res.status(404).json({ error: 'No data found' });
+//       }
+
+//       const totalAnswered = results[0].totalAnswered;
+//       const correctMatchCount = results[0].correctMatchCount;
+
+//       const message = `Total Answered: ${totalAnswered}, Correct Answered Count: ${correctMatchCount}`;
+
+//       res.json({ message });
+//     });
+//   });
+
+//   return router;
+// };
+
