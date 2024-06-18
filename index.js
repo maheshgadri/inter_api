@@ -30,7 +30,7 @@ ngrok.connect(port1).then(url => {
   const scoreRouteRouter = require('./routes/score');
   const loginRouter = require('./routes/login')(ngrokUrl);
   const signupRouter = require('./routes/signup');
-
+  const profile_fetchRouter = require('./routes/profile_fetch')(ngrokUrl);
 
   app.use('/des_open_ai_response', desOpenAiResponseRouter);
   app.use('/fetch_route', fetchRouteRouter(ngrokUrl));
@@ -38,6 +38,7 @@ ngrok.connect(port1).then(url => {
   app.use('/score', scoreRouteRouter(ngrokUrl));
   app.use('/login', loginRouter); // Add this line
   app.use('/signup', signupRouter(ngrokUrl));
+  app.use('/profile_fetch',profile_fetchRouter);
   
 }).catch(error => {
   console.log(`Couldn't tunnel ngrok: ${error}`);
